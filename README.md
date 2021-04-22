@@ -17,7 +17,7 @@ A code autoformatter for multiple programming languages.
 
 ## Installation
 ```
-pip install git@github.com:wolkenarchitekt/autoformat.git
+pip install git+git://github.com/wolkenarchitekt/autoformat.git#egg=autoformat
 ```
 
 ## Usage
