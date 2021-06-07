@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 import shutil
@@ -5,6 +6,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 AUTOFORMAT_DB = f"{os.getcwd()}/.autoformat_db"
 
@@ -90,6 +93,8 @@ def autoformat(file: Path, venv_bin_dir=None, node_bin_dir=None):
                 if not os.path.exists(script[0]):
                     raise SystemExit(f"Could not find formatter: {script[0]}")
 
+                logger.debug(os.getcwd())
+                logger.debug(f"Running: {script} {tmp_file.name}")
                 subprocess.run(
                     [
                         *script,
@@ -120,6 +125,7 @@ def collect_files(file_list):
 
 
 def autoformat_files(files, db, venv_bin_dir, node_bin_dir):
+    logger.debug(f"Formatting files: {files}")
     for file in files:
         if file not in db["files"] or db["files"][file] < os.path.getmtime(file):
             autoformat(file, venv_bin_dir, node_bin_dir)
@@ -127,6 +133,7 @@ def autoformat_files(files, db, venv_bin_dir, node_bin_dir):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     if len(sys.argv) == 1 or sys.argv[1] in ["-h", "--help"]:
         sys.exit("Syntax: autoformat [FILE]")
 
@@ -140,10 +147,10 @@ def main():
     node_bin_dir = get_node_bin_dir()
 
     if venv_bin_dir:
-        print(f"Using virtualenv: {venv_bin_dir}")
+        logger.info(f"Using virtualenv: {venv_bin_dir}")
 
     if node_bin_dir:
-        print(f"Using node dir: {node_bin_dir}")
+        logger.info(f"Using node dir: {node_bin_dir}")
 
     files = collect_files(file_list=sys.argv[1:])
 

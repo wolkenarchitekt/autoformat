@@ -4,7 +4,7 @@ setup(
     name="autoformat",
     description="",
     packages=find_packages(exclude=("tests",)),
-    version="0.0.1",
+    version="0.0.2",
     install_requires=[
         "typer",
     ],
