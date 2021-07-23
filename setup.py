@@ -6,6 +6,10 @@ setup(
     packages=find_packages(exclude=("tests",)),
     version="0.0.2",
     install_requires=[
+        "autoflake",
+        "black",
+        "isort",
+        "sqlparse",
         "typer",
     ],
     entry_points={"console_scripts": ["autoformat = autoformat:main"]},
