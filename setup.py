@@ -4,7 +4,7 @@ setup(
     name="autoformat",
     description="",
     packages=find_packages(exclude=("tests",)),
-    version="0.0.2",
+    version="0.0.3",
     install_requires=[
         "autoflake",
         "black",

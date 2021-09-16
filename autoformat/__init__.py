@@ -20,7 +20,7 @@ apt-get install jq
 FORMATTERS = {
     ".py": [
         ["autoflake", "--in-place", "--remove-all-unused-imports"],
-        ["isort", "-q", "--sp", "."],
+        ["isort", "-q"],
         ["black", "-q"],
     ],
     ".js": [["prettier", "--loglevel", "warn", "--write"]],
@@ -29,19 +29,6 @@ FORMATTERS = {
         ["sqlformat", "--reindent", "--keywords", "upper", "--identifiers", "lower"]
     ],
 }
-
-
-def get_venv_bin_dir():
-    # Try to find virtualenv dir
-    activate_script = list(Path(os.getcwd()).glob("**/bin/activate"))
-    if activate_script:
-        return str(activate_script[0].parent)
-
-
-def get_node_bin_dir():
-    path = Path(os.path.join(os.getcwd(), "node_modules/.bin"))
-    if path.exists():
-        return path
 
 
 def git_diff(file: Path, tmp_file: Path):
@@ -55,19 +42,13 @@ def git_diff(file: Path, tmp_file: Path):
     return result.stdout.decode()
 
 
-def autoformat(file: Path, venv_bin_dir=None, node_bin_dir=None):
+def autoformat(file: Path):
     with tempfile.NamedTemporaryFile(delete=False, suffix=file.suffix) as tmp_file:
         shutil.copyfile(file, tmp_file.name)
 
         # Non-inline formatters - redirect output to tempfile
         if file.suffix in [".json", ".sql"]:
             for script in FORMATTERS[file.suffix]:
-                if file.suffix == ".sql" and venv_bin_dir:
-                    script[0] = os.path.join(venv_bin_dir, script[0])
-
-                if not os.path.exists(script[0]):
-                    raise SystemExit(f"Could not find formatter: {script[0]}")
-
                 result = subprocess.run(
                     [
                         *script,
@@ -84,16 +65,13 @@ def autoformat(file: Path, venv_bin_dir=None, node_bin_dir=None):
         else:
             # Inline formatters
             for script in FORMATTERS[file.suffix]:
-                if file.suffix == ".py" and venv_bin_dir:
-                    script[0] = os.path.join(venv_bin_dir, script[0])
+                if script[0] == "isort":
+                    isort_cfg = Path(Path(sys.argv[0]).parent.parent.parent / ".isort.cfg")
+                    if not isort_cfg.exists():
+                        raise SystemExit(f"isort config not found at {isort_cfg}")
+                    logger.debug(f"Using isort config: {isort_cfg}")
+                    script.extend(['--sp', str(isort_cfg)])
 
-                if file.suffix == ".js" and node_bin_dir:
-                    script[0] = os.path.join(node_bin_dir, script[0])
-
-                if not os.path.exists(script[0]):
-                    raise SystemExit(f"Could not find formatter: {script[0]}")
-
-                logger.debug(os.getcwd())
                 logger.debug(f"Running: {script} {tmp_file.name}")
                 subprocess.run(
                     [
@@ -112,7 +90,9 @@ def autoformat(file: Path, venv_bin_dir=None, node_bin_dir=None):
 def collect_files(file_list):
     files = []
     for arg in file_list:
-        path = Path(os.path.join(os.getcwd(), arg))
+        path = Path(arg)
+        if not path.exists():
+            raise SystemExit(f"Path not found: {path}")
         if path.is_file():
             if path.name.endswith(tuple(FORMATTERS.keys())):
                 files.append(path)
@@ -120,20 +100,23 @@ def collect_files(file_list):
             for root, _, filenames in os.walk(path):
                 for file in filenames:
                     if file.endswith(tuple(FORMATTERS.keys())):
-                        files.append(Path(os.path.join(root, file)))
+                        files.append(Path(root) / Path(file))
     return files
 
 
-def autoformat_files(files, db, venv_bin_dir, node_bin_dir):
-    logger.debug(f"Formatting files: {files}")
+def autoformat_files(files, db, use_cache=False):
+    logger.debug(f"Formatting files: {','.join(str(file) for file in files)}")
     for file in files:
-        if file not in db["files"] or db["files"][file] < os.path.getmtime(file):
-            autoformat(file, venv_bin_dir, node_bin_dir)
-            db["files"][file] = os.path.getmtime(file)
+        if use_cache:
+            if file not in db["files"] or db["files"][file] < os.path.getmtime(file):
+                autoformat(file)
+                db["files"][file] = os.path.getmtime(file)
+        else:
+            autoformat(file)
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.WARNING)
     if len(sys.argv) == 1 or sys.argv[1] in ["-h", "--help"]:
         sys.exit("Syntax: autoformat [FILE]")
 
@@ -143,19 +126,10 @@ def main():
     else:
         db = {"venv_bin_dir": None, "node_bin_dir": None, "files": {}}
 
-    venv_bin_dir = get_venv_bin_dir()
-    node_bin_dir = get_node_bin_dir()
-
-    if venv_bin_dir:
-        logger.info(f"Using virtualenv: {venv_bin_dir}")
-
-    if node_bin_dir:
-        logger.info(f"Using node dir: {node_bin_dir}")
-
     files = collect_files(file_list=sys.argv[1:])
 
     autoformat_files(
-        files=files, db=db, venv_bin_dir=venv_bin_dir, node_bin_dir=node_bin_dir
+        files=files, db=db
     )
 
     with open(AUTOFORMAT_DB, "wb") as f:
