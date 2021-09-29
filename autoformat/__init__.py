@@ -20,8 +20,8 @@ apt-get install jq
 FORMATTERS = {
     ".py": [
         ["autoflake", "--in-place", "--remove-all-unused-imports"],
-        ["isort", "-q"],
         ["black", "-q"],
+        ["isort", "-q"],
     ],
     ".js": [["prettier", "--loglevel", "warn", "--write"]],
     ".json": [["/usr/bin/jq", "."]],
