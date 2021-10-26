@@ -69,7 +69,7 @@ def autoformat(file: Path):
         else:
             # Inline formatters
             for script in FORMATTERS[file.suffix]:
-                if script[0] == "isort":
+                if "isort" in script[0]:
                     isort_cfg = Path(Path(sys.argv[0]).parent.parent.parent / ".isort.cfg")
                     if not isort_cfg.exists():
                         raise SystemExit(f"isort config not found at {isort_cfg}")
