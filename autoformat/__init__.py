@@ -1,3 +1,5 @@
+import os
+import sys
 import logging
 import os
 import pickle
@@ -11,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 AUTOFORMAT_DB = f"{os.getcwd()}/.autoformat_db"
 
+script_dir = os.path.dirname(sys.argv[0])
+
 """
 dependencies:
 pip install autoflake isort black sqlparse
@@ -19,14 +23,14 @@ apt-get install jq
 """
 FORMATTERS = {
     ".py": [
-        ["autoflake", "--in-place", "--remove-all-unused-imports"],
-        ["black", "-q"],
-        ["isort", "-q"],
+        [f"{script_dir}/autoflake", "--in-place", "--remove-all-unused-imports"],
+        [f"{script_dir}/black", "-q"],
+        [f"{script_dir}/isort", "-q"],
     ],
     ".js": [["prettier", "--loglevel", "warn", "--write"]],
     ".json": [["/usr/bin/jq", "."]],
     ".sql": [
-        ["sqlformat", "--reindent", "--keywords", "upper", "--identifiers", "lower"]
+        [f"{script_dir}/sqlformat", "--reindent", "--keywords", "upper", "--identifiers", "lower"]
     ],
 }
 
