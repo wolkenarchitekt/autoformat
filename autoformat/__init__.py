@@ -72,9 +72,10 @@ def autoformat(file: Path):
                 if "isort" in script[0]:
                     isort_cfg = Path(Path(sys.argv[0]).parent.parent.parent / ".isort.cfg")
                     if not isort_cfg.exists():
-                        raise SystemExit(f"isort config not found at {isort_cfg}")
-                    logger.debug(f"Using isort config: {isort_cfg}")
-                    script.extend(['--sp', str(isort_cfg)])
+                        logger.error(f"isort config not found at {isort_cfg}")
+                    else:
+                        logger.debug(f"Using isort config: {isort_cfg}")
+                        script.extend(['--sp', str(isort_cfg)])
 
                 logger.debug(f"Running: {script} {tmp_file.name}")
                 subprocess.run(
