@@ -11,7 +11,10 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-AUTOFORMAT_DB = f"{os.getcwd()}/.autoformat_db"
+CACHE_DIR = f"{os.getcwd()}/.cache"
+AUTOFORMAT_DB = f"{CACHE_DIR}/autoformat.db"
+
+Path(CACHE_DIR).mkdir(exist_ok=True)
 
 script_dir = os.path.dirname(sys.argv[0])
 
