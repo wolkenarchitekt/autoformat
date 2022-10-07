@@ -1,3 +1,4 @@
+import contextlib
 import os
 import sys
 import logging
@@ -49,7 +50,22 @@ def git_diff(file: Path, tmp_file: Path):
     return result.stdout.decode()
 
 
+@contextlib.contextmanager
+def working_directory(path):
+    """Changes working directory and returns to previous on exit."""
+    prev_cwd = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev_cwd)
+
+
 def autoformat(file: Path):
+    with working_directory(file.parent):
+        result = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, check=True)
+        git_root = Path(result.stdout.decode().strip())
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=file.suffix) as tmp_file:
         shutil.copyfile(file, tmp_file.name)
 
@@ -73,7 +89,7 @@ def autoformat(file: Path):
             # Inline formatters
             for script in FORMATTERS[file.suffix]:
                 if "isort" in script[0]:
-                    isort_cfg = Path(Path(sys.argv[0]).parent.parent.parent / ".isort.cfg")
+                    isort_cfg = Path(git_root / ".isort.cfg")
                     if not isort_cfg.exists():
                         logger.error(f"isort config not found at {isort_cfg}")
                     else:
