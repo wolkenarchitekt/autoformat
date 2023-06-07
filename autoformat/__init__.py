@@ -1,6 +1,4 @@
 import contextlib
-import os
-import sys
 import logging
 import os
 import pickle
@@ -24,6 +22,7 @@ dependencies:
 pip install autoflake isort black sqlparse
 npm install prettier
 apt-get install jq
+go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 """
 FORMATTERS = {
     ".py": [
@@ -34,8 +33,17 @@ FORMATTERS = {
     ".js": [["prettier", "--loglevel", "warn", "--write"]],
     ".json": [["/usr/bin/jq", "."]],
     ".sql": [
-        [f"{script_dir}/sqlformat", "--reindent", "--keywords", "upper", "--identifiers", "lower"]
+        [
+            f"{script_dir}/sqlformat",
+            "--reindent",
+            "--keywords",
+            "upper",
+            "--identifiers",
+            "lower",
+        ]
     ],
+    ".yml": [["yamlfmt"]],
+    ".yaml": [["yamlfmt"]],
 }
 
 
@@ -62,9 +70,16 @@ def working_directory(path):
 
 
 def autoformat(file: Path):
+    git_root = None
     with working_directory(file.parent):
-        result = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, check=True)
-        git_root = Path(result.stdout.decode().strip())
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"], capture_output=True, check=True
+            )
+        except subprocess.CalledProcessError:
+            logger.debug("No git root found")
+        else:
+            git_root = Path(result.stdout.decode().strip())
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=file.suffix) as tmp_file:
         shutil.copyfile(file, tmp_file.name)
@@ -88,13 +103,13 @@ def autoformat(file: Path):
         else:
             # Inline formatters
             for script in FORMATTERS[file.suffix]:
-                if "isort" in script[0]:
+                if "isort" in script[0] and git_root:
                     isort_cfg = Path(git_root / ".isort.cfg")
                     if not isort_cfg.exists():
-                        logger.error(f"isort config not found at {isort_cfg}")
+                        logger.debug(f"isort config not found at {isort_cfg}")
                     else:
                         logger.debug(f"Using isort config: {isort_cfg}")
-                        script.extend(['--sp', str(isort_cfg)])
+                        script.extend(["--sp", str(isort_cfg)])
 
                 logger.debug(f"Running: {script} {tmp_file.name}")
                 subprocess.run(
@@ -152,9 +167,7 @@ def main():
 
     files = collect_files(file_list=sys.argv[1:])
 
-    autoformat_files(
-        files=files, db=db
-    )
+    autoformat_files(files=files, db=db)
 
     with open(AUTOFORMAT_DB, "wb") as f:
         pickle.dump(db, f)
