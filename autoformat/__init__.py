@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
 
 CACHE_DIR = f"{os.getcwd()}/.cache"
 AUTOFORMAT_DB = f"{CACHE_DIR}/autoformat.db"
@@ -19,18 +20,21 @@ script_dir = os.path.dirname(sys.argv[0])
 
 """
 dependencies:
-pip install autoflake isort black sqlparse
+pip install autoflake isort black sqlparse ruff
 npm install prettier
 apt-get install jq
 go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 """
 FORMATTERS = {
+    ".dart": [["dart", "format"]],
     ".py": [
         [f"{script_dir}/autoflake", "--in-place", "--remove-all-unused-imports"],
         [f"{script_dir}/black", "-q"],
         [f"{script_dir}/isort", "-q"],
+        # [f"{script_dir}/ruff", "format", "--quiet"],
     ],
-    ".js": [["prettier", "--loglevel", "warn", "--write"]],
+    ".js": [["prettier", "--log-level", "warn", "--write"]],
+    ".jsx": [["prettier", "--log-level", "warn", "--write"]],
     ".json": [["/usr/bin/jq", "."]],
     ".sql": [
         [
@@ -44,6 +48,8 @@ FORMATTERS = {
     ],
     ".yml": [["yamlfmt"]],
     ".yaml": [["yamlfmt"]],
+    ".sh": [["shfmt", "-i", "2", "-w"]],
+    "Vagrantfile": [["rufo"]],
 }
 
 
@@ -80,7 +86,6 @@ def autoformat(file: Path):
             logger.debug("No git root found")
         else:
             git_root = Path(result.stdout.decode().strip())
-
     with tempfile.NamedTemporaryFile(delete=False, suffix=file.suffix) as tmp_file:
         shutil.copyfile(file, tmp_file.name)
 
