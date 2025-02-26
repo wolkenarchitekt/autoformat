@@ -35,6 +35,7 @@ FORMATTERS = {
     ],
     ".js": [["prettier", "--log-level", "warn", "--write"]],
     ".jsx": [["prettier", "--log-level", "warn", "--write"]],
+    ".html": [["prettier", "--log-level", "warn", "--write"]],
     ".json": [["/usr/bin/jq", "."]],
     ".sql": [
         [
