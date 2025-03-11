@@ -11,7 +11,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-CACHE_DIR = f"{os.getcwd()}/.cache"
+CACHE_DIR = f"{Path.home()}/.cache/autoformat"
 AUTOFORMAT_DB = f"{CACHE_DIR}/autoformat.db"
 
 Path(CACHE_DIR).mkdir(exist_ok=True)
