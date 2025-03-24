@@ -1,5 +1,5 @@
 install:
-	sudo apt-get install -y shfmt
+	sudo apt-get install -y shfmt jq
 	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 	npm install prettier
 	cargo install taplo-cli

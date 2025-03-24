@@ -9,7 +9,6 @@ import tempfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
 
 CACHE_DIR = f"{Path.home()}/.cache/autoformat"
 AUTOFORMAT_DB = f"{CACHE_DIR}/autoformat.db"
@@ -18,13 +17,6 @@ Path(CACHE_DIR).mkdir(exist_ok=True)
 
 script_dir = os.path.dirname(sys.argv[0])
 
-"""
-dependencies:
-pip install autoflake isort black sqlparse ruff
-npm install prettier
-apt-get install jq
-go install github.com/google/yamlfmt/cmd/yamlfmt@latest
-"""
 FORMATTERS = {
     ".dart": [["dart", "format"]],
     ".py": [
@@ -52,6 +44,7 @@ FORMATTERS = {
     ".sh": [["shfmt", "-i", "2", "-w"]],
     ".toml": [["taplo", "fmt"]],
     "Vagrantfile": [["rufo"]],
+    ".rb": [["rufo"]],
 }
 
 
