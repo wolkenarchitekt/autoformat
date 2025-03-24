@@ -50,6 +50,7 @@ FORMATTERS = {
     ".yml": [["yamlfmt"]],
     ".yaml": [["yamlfmt"]],
     ".sh": [["shfmt", "-i", "2", "-w"]],
+    ".toml": [["taplo", "fmt"]],
     "Vagrantfile": [["rufo"]],
 }
 

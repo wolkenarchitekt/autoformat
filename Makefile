@@ -1,15 +1,10 @@
-VENV = .venv
-VENV_BIN = $(VENV)/bin
-# Extract MAJOR.MINOR python version
-PYTHON_VERSION := $(shell cat $(PWD)/.python-version | awk -F \. {'print $$1"."$$2'})
+install:
+	sudo apt-get install -y shfmt
+	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+	npm install prettier
+	cargo install taplo-cli
+	uv venv
+	uv pip install -e .
+	uv pip install .[dev]
 
-$(VENV): requirements.txt setup.py
-	python$(PYTHON_VERSION) -m venv $(VENV)
-	$(VENV_BIN)/pip install --upgrade pip setuptools && \
-	$(VENV_BIN)/pip install -r requirements.txt && \
-	$(VENV_BIN)/pip install -e .
-	touch $(VENV)
-
-virtualenv-create:
-	rm -rf $(VENV)
-	$(MAKE) $(VENV)
+	uv tool install -e . --force
