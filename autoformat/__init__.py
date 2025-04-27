@@ -8,6 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+
 logger = logging.getLogger(__name__)
 
 CACHE_DIR = f"{Path.home()}/.cache/autoformat"
@@ -17,7 +18,9 @@ Path(CACHE_DIR).mkdir(exist_ok=True)
 
 script_dir = os.path.dirname(sys.argv[0])
 
+
 FORMATTERS = {
+    ".cpp": [["clang-format", "-i" ]],
     ".dart": [["dart", "format"]],
     ".py": [
         [f"{script_dir}/autoflake", "--in-place", "--remove-all-unused-imports"],
@@ -43,8 +46,11 @@ FORMATTERS = {
     ".yaml": [["yamlfmt"]],
     ".sh": [["shfmt", "-i", "2", "-w"]],
     ".toml": [["taplo", "fmt"]],
+    # ".toml": [["toml-sort", "--in-place"]],
     "Vagrantfile": [["rufo"]],
     ".rb": [["rufo"]],
+    ".xml": [["xmllint", "--format"]],
+    # https://github.com/reteps/dockerfmt
 }
 
 
@@ -86,6 +92,20 @@ def autoformat(file: Path):
 
         # Non-inline formatters - redirect output to tempfile
         if file.suffix in [".json", ".sql"]:
+            for script in FORMATTERS[file.suffix]:
+                result = subprocess.run(
+                    [
+                        *script,
+                        f"{tmp_file.name}",
+                    ],
+                    check=True,
+                    shell=False,
+                    capture_output=True,
+                )
+                if result.stdout:
+                    with open(tmp_file.name, "w") as f:
+                        f.write(result.stdout.decode())
+        elif file.suffix in [".xml"]:
             for script in FORMATTERS[file.suffix]:
                 result = subprocess.run(
                     [
