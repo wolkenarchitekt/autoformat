@@ -1,12 +1,6 @@
 # autoformat
 
-A code autoformatter for multiple programming languages.
-
-## Features:
-* Try to use formatting tools from virtualenv / node_modules, if available - 
-  ensure consistent results when using different formatter versions (black, isort, prettier, ...) 
-* Print pretty diff after formatting
-* Cache formatting results - don't rerun formatter on files not changed
+A unified script to format code in multiple programming languages with a single command.
 
 ## Supported file types / languages
 
@@ -19,24 +13,9 @@ A code autoformatter for multiple programming languages.
 * Shell (using [shfmt](https://webinstall.dev/shfmt/))
 * TOML (using [taplo](https://github.com/tamasfe/taplo))
 * Ruby, Vagrantfile (using [rufo](https://github.com/ruby-formatter/rufo))
-
-## Installation
-```
-pip install git+git://github.com/wolkenarchitekt/autoformat.git#egg=autoformat
-```
+* Nginx conf (using [nginxfmt](https://github.com/slomkowski/nginx-config-formatter))
 
 ## Usage
 ```
 autoformat $PATH
-```
-
-## Integrate into PyCharm
-
-To integrate autoformat into PyCharm, add a new External Tool (Settings, Tools, External Tools).
-
-Tool Settings:
-```
-Program: $ContentRoot$/.venv/bin/autoformat
-Arguments: $FileRelativePath$
-Working directory: 
 ```

@@ -1,32 +1,34 @@
 #!/bin/bash
-VERSION=1.0.2
+VERSION=1.1.0
 VERBOSE=0
 POSITIONAL=()
+
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -v|--verbose)
-      VERBOSE=1
-      shift
-      ;;
-    --version)
-      echo "autoformat.sh version ${VERSION}"
-      exit 0
-      ;;
-    --install)
-      sudo apt-get install -y git shfmt
-      go install github.com/google/yamlfmt/cmd/yamlfmt@latest
-      volta install prettier
-      cargo install taplo-cli
-      uv tool install ruff --force
-      uv tool install autoflake --force
-      uv tool install isort --force
-      sudo ln -sf $(realpath $0) /usr/local/bin/autoformat
-      exit 0
-      ;;
-    *)
-      POSITIONAL+=("$1")
-      shift
-      ;;
+  -v | --verbose)
+    VERBOSE=1
+    shift
+    ;;
+  --version)
+    echo "autoformat.sh version ${VERSION}"
+    exit 0
+    ;;
+  --install)
+    sudo apt-get install -y git shfmt
+    go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+    volta install prettier
+    cargo install taplo-cli
+    uv tool install ruff --force
+    uv tool install autoflake --force
+    uv tool install isort --force
+    uv tool install nginxfmt --force
+    sudo ln -sf $(realpath $0) /usr/local/bin/autoformat
+    exit 0
+    ;;
+  *)
+    POSITIONAL+=("$1")
+    shift
+    ;;
   esac
 done
 set -- "${POSITIONAL[@]}"
@@ -37,16 +39,21 @@ log() {
   fi
 }
 
-find "$1" -type f | while read -r file; do
-  git_root=$(git -C "$(dirname ${file})" rev-parse --show-toplevel 2>/dev/null)
+format() {
+  local file="$1"
+  local backup json_backup xml_backup
 
   backup=$(mktemp)
   cp --preserve=mode "${file}" "$backup"
 
   case "${file##*.}" in
-  cpp)
+  cpp | hpp | h)
     log "clang-format -i \"${file}\""
     clang-format -i "${file}"
+    ;;
+  conf | template)
+    log "nginxfmt \"${file}\""
+    nginxfmt "${file}"
     ;;
   dart)
     log "dart format \"${file}\""
@@ -82,18 +89,38 @@ find "$1" -type f | while read -r file; do
     log "taplo fmt \"${file}\""
     taplo fmt "${file}"
     ;;
-  xml)
+  xml | svg)
     xml_backup=$(mktemp)
     log "xmllint --format \"${file}\" >>\"${xml_backup}\""
     xmllint --format "${file}" >>"${xml_backup}"
     cp "${xml_backup}" "${file}"
     ;;
-  yml)
+  yml | yaml)
     log "yamlfmt \"${file}\""
     yamlfmt "${file}"
     ;;
-  *) ;;
+  *)
+    return
+    ;;
   esac
 
-  git --no-pager diff --color $backup "${file}" || true
+  git --no-pager diff --color "$backup" "${file}" || true
+}
+
+targets=("$@")
+if [[ ${#targets[@]} -eq 0 ]]; then
+  targets=(".")
+fi
+
+for t in "${targets[@]}"; do
+  if [[ -d "$t" ]]; then
+    find "$t" -type f | while read -r file; do
+      format "$file"
+    done
+  elif [[ -f "$t" ]]; then
+    format "$t"
+  else
+    # Allow shell-expanded globs that didn't match to be skipped quietly
+    log "Skipping non-existent path: $t"
+  fi
 done
