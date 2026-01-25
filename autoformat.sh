@@ -85,6 +85,12 @@ format() {
     log "shfmt -i 2 -w \"${file}\""
     shfmt -i 2 -w "${file}"
     ;;
+  swift)
+    # https://www.swift.org/install/linux/
+    # https://github.com/nicklockwood/SwiftFormat
+    log "swiftformat \"${file}\""
+    swiftformat --swift-version 6 "${file}"
+    ;;
   toml)
     log "taplo fmt \"${file}\""
     taplo fmt "${file}"
