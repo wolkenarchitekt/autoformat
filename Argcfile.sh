@@ -5,9 +5,7 @@
 install() {
   install-argc
 
-  if [[ "$(realpath "$BASH_SOURCE")" != "/usr/local/bin/autoformat" ]]; then
-    sudo install -m 755 "$BASH_SOURCE" /usr/local/bin/autoformat
-  fi
+  sudo install -m 755 "autoformat.sh" /usr/local/bin/autoformat
 
   argc --argc-completions bash autoformat |
     sudo tee /etc/bash_completion.d/autoformat 1>/dev/null

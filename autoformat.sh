@@ -5,6 +5,7 @@ set -euo pipefail
 
 # @cmd Format files or directories
 # @flag -v --verbose Enable verbose output
+# @flag -n --dry-run Show what would be formatted without making changes
 # @arg targets* Files or directories to format (default: current directory)
 # @meta default-subcommand
 format() {
@@ -101,6 +102,10 @@ format_file() {
   esac
 
   git --no-pager diff --color "$backup" "${file}" || true
+
+  if [[ "${argc_dry_run:-0}" -eq 1 ]]; then
+    cp --preserve=mode "$backup" "${file}"
+  fi
 }
 
 eval "$(argc --argc-eval "$0" "$@")"
