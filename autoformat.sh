@@ -1,45 +1,35 @@
 #!/bin/bash
-VERSION=1.1.0
-VERBOSE=0
-POSITIONAL=()
+# @meta version 1.1.0
+# @meta description Auto-format source files using language-specific formatters
+set -euo pipefail
 
-while [[ $# -gt 0 ]]; do
-  case $1 in
-  -v | --verbose)
-    VERBOSE=1
-    shift
-    ;;
-  --version)
-    echo "autoformat.sh version ${VERSION}"
-    exit 0
-    ;;
-  --install)
-    sudo apt-get install -y git shfmt
-    go install github.com/google/yamlfmt/cmd/yamlfmt@latest
-    volta install prettier
-    cargo install taplo-cli
-    uv tool install ruff --force
-    uv tool install autoflake --force
-    uv tool install isort --force
-    uv tool install nginxfmt --force
-    sudo ln -sf $(realpath $0) /usr/local/bin/autoformat
-    exit 0
-    ;;
-  *)
-    POSITIONAL+=("$1")
-    shift
-    ;;
-  esac
-done
-set -- "${POSITIONAL[@]}"
+# @cmd Format files or directories
+# @flag -v --verbose Enable verbose output
+# @arg targets* Files or directories to format (default: current directory)
+# @meta default-subcommand
+format() {
+  local targets=("${argc_targets[@]:-"."}")
+
+  for t in "${targets[@]}"; do
+    if [[ -d "$t" ]]; then
+      find "$t" -type f | while read -r file; do
+        format_file "$file"
+      done
+    elif [[ -f "$t" ]]; then
+      format_file "$t"
+    else
+      log "Skipping non-existent path: $t"
+    fi
+  done
+}
 
 log() {
-  if [[ $VERBOSE -eq 1 ]]; then
+  if [[ "${argc_verbose:-0}" -eq 1 ]]; then
     echo "$@"
   fi
 }
 
-format() {
+format_file() {
   local file="$1"
   local backup json_backup xml_backup
 
@@ -113,20 +103,4 @@ format() {
   git --no-pager diff --color "$backup" "${file}" || true
 }
 
-targets=("$@")
-if [[ ${#targets[@]} -eq 0 ]]; then
-  targets=(".")
-fi
-
-for t in "${targets[@]}"; do
-  if [[ -d "$t" ]]; then
-    find "$t" -type f | while read -r file; do
-      format "$file"
-    done
-  elif [[ -f "$t" ]]; then
-    format "$t"
-  else
-    # Allow shell-expanded globs that didn't match to be skipped quietly
-    log "Skipping non-existent path: $t"
-  fi
-done
+eval "$(argc --argc-eval "$0" "$@")"
